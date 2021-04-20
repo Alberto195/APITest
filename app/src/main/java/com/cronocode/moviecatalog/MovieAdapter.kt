@@ -5,19 +5,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cronocode.moviecatalog.models.Movie
+import com.cronocode.moviecatalog.models.OverviewMode.OverviewModel
 import kotlinx.android.synthetic.main.movie_item.view.*
 
 class MovieAdapter(
-    private val movies : List<Movie>
+    private val movies: OverviewModel?
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>(){
 
     class MovieViewHolder(view : View) : RecyclerView.ViewHolder(view){
         private val IMAGE_BASE = "https://image.tmdb.org/t/p/w500/"
-        fun bindMovie(movie : Movie){
-            itemView.movie_title.text = movie.title
-            itemView.movie_release_date.text = movie.release
-            Glide.with(itemView).load(IMAGE_BASE + movie.poster).into(itemView.movie_poster)
+        fun bindMovie(movie: OverviewModel){
+            itemView.movie_title.text = movie.id
+            itemView.movie_release_date.text = movie.releaseDate.toString()
+            Glide.with(itemView).load(movie.title.image.url).into(itemView.movie_poster)
         }
     }
 
@@ -27,9 +27,13 @@ class MovieAdapter(
         )
     }
 
-    override fun getItemCount(): Int = movies.size
+    override fun getItemCount(): Int = 2
 
     override fun onBindViewHolder(holder: MovieViewHolder, position: Int) {
-        holder.bindMovie(movies.get(position))
+        return movies.let {
+            if (it != null) {
+                holder.bindMovie(it)
+            }
+        }
     }
 }
