@@ -1,41 +1,63 @@
 package com.cronocode.moviecatalog
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.cronocode.moviecatalog.models.MovieResponse
+import com.cronocode.moviecatalog.businessLogic.GetApiViewModel
 import com.cronocode.moviecatalog.models.OverviewMode.OverviewModel
-import com.cronocode.moviecatalog.services.MovieApiInterface
-import com.cronocode.moviecatalog.services.MovieApiService
 import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(), MovieAdapter.MovieViewHolder.Listener {
+
+    private lateinit var viewModel: GetApiViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        viewModel = ViewModelProviders.of(this).get(GetApiViewModel::class.java)
+        viewModel.init()
         rv_movies_list.layoutManager = LinearLayoutManager(this)
         rv_movies_list.setHasFixedSize(true)
-        getMovieData { movies : OverviewModel? ->
-            rv_movies_list.adapter = MovieAdapter(movies)
-        }
+        rv_movies_list.adapter = MovieAdapter(viewModel.getMovie()?.value, this@MainActivity)
     }
 
-    private fun getMovieData(callback: (OverviewModel?) -> Unit){
-        val apiService = MovieApiService.getInstance().create(MovieApiInterface::class.java)
-        apiService.getMovieList().enqueue(object : Callback<MovieResponse> {
-            override fun onFailure(call: Call<MovieResponse>, t: Throwable) {
-                Log.d("RESPONSE MAIN", "NO")
-            }
-
-            override fun onResponse(call: Call<MovieResponse>, response: Response<MovieResponse>) {
-                Log.d("RESPONSE MAIN", response.body()?.movies.toString())
-                return callback(response.body()?.movies)
-            }
+    override fun onStart() {
+        super.onStart()
+        viewModel.getMovie()?.observe(this, Observer<List<OverviewModel?>>{
+            rv_movies_list.adapter?.notifyDataSetChanged()
         })
+    }
+
+    override fun onMovieClicked(position: Int) {
+        val list: List<OverviewModel?>? = viewModel.getMovie()?.value
+        if(position==0) {
+            if (list?.get(position)?.ratings?.rating!! >= list[position + 1]?.ratings?.rating!!) {
+                val text = "Nice! {} points!"
+                val duration = Toast.LENGTH_SHORT
+                val toast = Toast.makeText(applicationContext, text, duration)
+                toast.show()
+                viewModel.refreshData()
+
+            }
+        }
+        else if(position==1){
+            if (list?.get(position)?.ratings?.rating!! >= list[position-1]?.ratings?.rating!!) {
+                val text = "Nice! {} points!"
+                val duration = Toast.LENGTH_SHORT
+                val toast = Toast.makeText(applicationContext, text, duration)
+                toast.show()
+                viewModel.refreshData()
+
+            }
+        }
     }
 }
